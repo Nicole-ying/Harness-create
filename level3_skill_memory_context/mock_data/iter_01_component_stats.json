@@ -1,0 +1,17 @@
+{
+  "task": "BipedalWalker reward diagnosis",
+  "iteration": 1,
+  "reward_components": {
+    "forward_velocity_reward": {
+      "magnitude_share": 0.972,
+      "active_rate": 0.943
+    },
+    "upright_penalty": {
+      "magnitude_share": 0.028
+    },
+    "vertical_oscillation_penalty": {
+      "active_rate": 0.0
+    }
+  },
+  "note": "Teaching-only compact data derived from the earlier Harness-create lesson; not a complete CREATE raw log."
+}
