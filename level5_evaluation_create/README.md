@@ -31,7 +31,7 @@ C. CREATE Outcome Metrics
    - solved
    - reward version / round
    - test fitness
-   - 组件 activation_rate / magnitude_share（有真实表时）
+   - activation_rate / magnitude_share（有真实 component 表时）
 ```
 
 最重要的一句话：
@@ -48,15 +48,7 @@ C. CREATE Outcome Metrics
 Agent: 我认为是 proxy leakage，建议 validity gating。
 ```
 
-你无法知道：
-
-- 它是不是碰巧猜对；
-- 是否真的读取了实验数据；
-- 是否加载了正确 Skill；
-- 有没有编造数字；
-- 换一个 seed 是否还能工作；
-- 加 Skill 后是否真的优于不加 Skill；
-- 最终 PPO 是否真的改善。
+你无法知道它是不是碰巧猜对、有没有真的读取实验数据、是否加载了正确 Skill、有没有编造数字、换 seed 后是否稳定，也无法知道最终 PPO 是否真的改善。
 
 因此完整链路应该是：
 
@@ -80,49 +72,78 @@ Ablation / Report
 
 ---
 
-## 2. 本目录结构
+## 2. 文件结构
 
 ```text
 level5_evaluation_create/
-├── contracts.py               # EvalCase / evaluation contracts
-├── session_eval.py            # 直接从 Level 4 Session JSONL 计算确定性指标
-├── benchmark.py               # 批量评测 case × variant
-├── report.py                  # 生成 Markdown/CSV 风格报告
+├── contracts.py               # EvalCase / SessionMetrics
+├── session_eval.py            # 直接从 Level 4 Session JSONL 算确定性指标
+├── benchmark.py               # case × variant 批量评测
+├── report.py                  # Markdown report
 ├── create_adapter.py          # 读取真实 CREATE supplement/local clone
+├── outcome_join.py            # Agent trajectory ↔ PPO outcome provenance join
 ├── run_live_benchmark.py      # 可选：真实 LLM + Level 4 Harness
 │
 ├── fixtures/
-│   ├── cases.jsonl            # 教学 eval cases
-│   └── sessions/              # 不需要 API 的固定 session traces
+│   ├── cases.jsonl
+│   ├── sessions/
+│   ├── agent_records.jsonl
+│   └── create_round_outcomes.csv
 │
-├── step1_eval_contract.py     # 先学“什么叫可评测任务”
-├── step2_evaluate_session.py  # 评一个 Session Log
-├── step3_ablation_fixture.py  # 比较 baseline vs full
-├── step4_create_adapter.py    # 接真实 CREATE 仓库
-├── step5_generate_report.py   # 汇总报告
+├── smoke_test.py
+├── step1_eval_contract.py
+├── step2_evaluate_session.py
+├── step3_ablation_fixture.py
+├── step4_create_adapter.py
+├── step5_generate_report.py
+├── step6_join_agent_create.py
 │
 ├── EVALUATION_GUIDE.md
 ├── CREATE_INTEGRATION.md
+├── LEARNING_NOTES.md
 ├── INTERVIEW_QUESTIONS.md
 ├── SOURCE_REFERENCES.md
-└── requirements.txt
+└── tests/test_level5.py
 ```
 
 ---
 
-## 3. 第一步：完全不需要 API
+## 3. 安装与第一轮运行：完全不需要 API
 
 ```bash
 cd level5_evaluation_create
+python -m venv .venv
+```
+
+Windows PowerShell：
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+先跑：
+
+```bash
+python smoke_test.py
+pytest -q
+```
+
+然后严格按顺序：
+
+```bash
 python step1_eval_contract.py
 python step2_evaluate_session.py
 python step3_ablation_fixture.py
 python step5_generate_report.py
+python step6_join_agent_create.py
 ```
 
-这些步骤只读取固定的 `cases.jsonl` 和 Session JSONL。
+这些步骤都不需要 LLM API。
 
-### Eval Case 不是 Prompt
+---
+
+## 4. Eval Case 不是 Prompt
 
 一个 Eval Case 是“任务 + 可验证成功条件”：
 
@@ -132,16 +153,18 @@ python step5_generate_report.py
   "user_request": "分析 BipedalWalker reward failure",
   "required_tools": ["get_training_feedback", "get_component_stats"],
   "expected_skill": "gate-proxy-by-validity",
-  "required_evidence_terms": ["97.2%", "early falls"],
+  "required_evidence_terms": ["97.2%", "14/20"],
   "forbidden_claims": ["improved by 50%"]
 }
 ```
 
 这比“看看回答是否像样”更工程化。
 
+`fixtures/` 中所有数值都明确是 synthetic teaching data，不是 CREATE 论文实验结果。
+
 ---
 
-## 4. Session-based evaluation
+## 5. Session-based evaluation
 
 Level 4 已经把 durable facts 记录为：
 
@@ -155,7 +178,7 @@ tool/result
 turn/end
 ```
 
-因此 Level 5 不需要猜 Agent 做过什么，可以直接从 JSONL 计算：
+因此 Level 5 可以直接计算：
 
 ```text
 completed
@@ -163,73 +186,49 @@ step_count
 tool_call_count
 tool_error_count
 required_tool_recall
-loaded_skill
+loaded_skills
 skill_match
 evidence_coverage
 forbidden_claim_count
-context_char_count
+total_context_chars
+max_context_chars
+passed_contract
 ```
 
-这也是为什么 Level 4 的 append-only log 很重要。
+这也是为什么 Level 4 的 append-only Session Log 很重要。
 
 ---
 
-## 5. Fixture Ablation
+## 6. Fixture Ablation
 
-`fixtures/sessions/` 放了同一教学 case 的两种固定 trace：
+固定 trace 提供两种 variant：
 
 ```text
 baseline
 full
 ```
 
-baseline 故意少调用组件证据、没有加载 Skill；full 则完整执行 MCP evidence + Skill。
-
-运行：
+baseline 故意缺少部分 evidence / Skill；full 完成 required Tool + Skill 流程。
 
 ```bash
 python step3_ablation_fixture.py
 ```
 
-你应该看到 full 在：
-
-```text
-required_tool_recall
-skill_match
-evidence_coverage
-```
-
-上优于 baseline。
-
-注意：这些是 **teaching fixtures**，不是论文实验结果。
+它只证明 evaluator 能区分两种轨迹，**不证明真实 LLM 或真实 CREATE 得到了提升**。
 
 ---
 
-## 6. 接真实 CREATE 仓库
+## 7. 接真实 CREATE 仓库
 
-这一层直接适配你的公开 supplement 仓库：
+Level 5 直接适配当前公开 supplement：
 
 ```text
 Nicole-ying/CREATE-Reward-Editing-Agent
 ```
 
-当前该仓库明确是 reviewer-facing supplement，而不是通用软件包；其中：
+当前仓库本身说明它是 reviewer-facing supplement，而非通用 Python package；因此这里采用 artifact adapter，而不是强行 import。
 
-```text
-03_full_results/
-07_component_evidence/
-08_reward_lineage_cases/
-```
-
-正好分别对应：
-
-```text
-训练 outcome
-组件 evidence
-reward lineage / diagnosis case
-```
-
-先把两个仓库放在同一级：
+将两个仓库放在同一级：
 
 ```text
 workspace/
@@ -243,21 +242,90 @@ workspace/
 python step4_create_adapter.py ../CREATE-Reward-Editing-Agent
 ```
 
-Adapter 会：
+Adapter 当前会读取：
 
-1. 读取 `03_full_results/bipedalwalker_results.csv`；
-2. 读取 `03_full_results/lunarlander_aggregate_results.csv`；
-3. 检查 `03_full_results/per_round_results_schema.csv`；
-4. 扫描 `07_component_evidence/` 下未来出现的 CSV evidence 表；
-5. 把 `TBD` 保留为 missing，而不是编造数值。
+```text
+03_full_results/bipedalwalker_results.csv
+03_full_results/lunarlander_aggregate_results.csv
+03_full_results/per_round_results_schema.csv
+07_component_evidence/**/*.csv
+```
 
-### 这点非常重要
-
-当前 CREATE supplement 本身明确说明一部分 per-round / component evidence 仍需从 raw experiment logs 填充，因此 Level 5 **不会自动把 TBD 猜成数字**。
+`TBD` / `NA` 会转换为 missing (`None`)；绝不猜数字。
 
 ---
 
-## 7. 真正的 CREATE × Harness 闭环应该怎么接
+## 8. Agent trajectory 和真实 PPO outcome 怎么 join
+
+Level 5 用 provenance key：
+
+```text
+run_id
++ environment
++ lineage_index
++ round
++ reward_version
+```
+
+进行连接。
+
+```bash
+python step6_join_agent_create.py
+```
+
+这个教学步骤使用 synthetic records 来演示：
+
+```text
+Agent session
+      ↓
+reward proposal + validation status
+      ↓
+JOIN
+      ↓
+PPO round outcome
+      ↓
+Experience gate
+```
+
+真实系统中，只有存在实际 PPO outcome 且 reward code 已通过 validation 的 trajectory，才应进入 Experience/Skill 后续标注流程。
+
+---
+
+## 9. Live benchmark（可选，需要 API）
+
+复制：
+
+```powershell
+Copy-Item .env.example .env
+```
+
+填本地 API Key 后：
+
+```bash
+python run_live_benchmark.py
+```
+
+它复用 Level 4 的 `AgentHarness`，比较：
+
+```text
+tools_only
+tools + skill
+full = tools + skill + memory + trace
+```
+
+每个结果都保存到：
+
+```text
+runs/live/*.jsonl
+```
+
+然后仍由同一个 `session_eval.py` 评测。
+
+**单次 live run 只算 smoke test。** 真正 ablation 至少需要多次运行/种子、固定 model/version、matched budget 和相同 stopping rule。
+
+---
+
+## 10. 真正的 CREATE × Harness 闭环
 
 最终不是：
 
@@ -276,89 +344,46 @@ select/load Skill
   ↓
 propose reward edit
   ↓
-CREATE validator
+CREATE code validation
   ↓
 PPO training
   ↓
 real outcome
   ↓
-Evaluation record
+join Agent trace + outcome
+  ↓
+Evaluation / Experience labeling / Skill evolution
 ```
 
-建议最终每一轮保存两类记录：
-
-### Agent trace
+建议每一轮保存：
 
 ```text
-session_id
-selected skill
-tool calls
-context snapshot
-final diagnosis
-proposed intervention
+Agent trace:
+session_path / tool calls / selected skill / proposal / model+skill versions
+
+RL outcome:
+run_id / environment / lineage / round / reward_version /
+search_fitness / best_so_far_fitness / solved / test_fitness
 ```
-
-### RL outcome
-
-```text
-environment
-seed / lineage
-round
-reward_version
-search_fitness
-best_so_far_fitness
-solved
-test_fitness
-```
-
-然后通过：
-
-```text
-run_id + lineage + round + reward_version
-```
-
-进行 join。
 
 ---
 
-## 8. Live benchmark（可选，需要 API）
+## 11. Level 5 过关标准
 
-`run_live_benchmark.py` 会复用 Level 4 的 `AgentHarness`，运行同一个 case 的不同 capability 配置：
-
-```text
-tools_only
-skills
-a full harness
-```
-
-真实结果写入：
+你应该能独立解释：
 
 ```text
-runs/live/*.jsonl
+Demo success vs evaluation
+offline vs online/domain outcome
+deterministic eval vs LLM-as-a-Judge
+Tool/Skill/Memory/Context metrics
+trajectory evaluation
+ablation + matched budget
+paired seeds
+data leakage
+Agent trace ↔ PPO outcome join
+为什么 LLM 自评不能成为 Experience 成功标签
 ```
-
-然后仍然交给同一个 `session_eval.py` 评。
-
-也就是说：
-
-> evaluator 不关心 session 是 fixture、DeepSeek 还是其他 OpenAI-compatible provider 生成的，只认统一 Session Event Log。
-
----
-
-## 9. Level 5 过关标准
-
-你应该能独立回答：
-
-1. 为什么 demo success 不等于 Agent evaluation？
-2. offline eval 和 online/domain outcome 有什么区别？
-3. 为什么先做 deterministic eval，再考虑 LLM-as-a-Judge？
-4. 如何从 session trace 计算 Tool success？
-5. Skill routing accuracy 怎么定义？
-6. Context cost 怎么量？
-7. 为什么 Agent answer score 不能替代 PPO outcome？
-8. Ablation 为什么必须固定 case / seed / budget？
-9. 如何避免 data leakage？
-10. 如何把 CREATE 的 round outcome 与 Agent trajectory join？
 
 做到这里，Level 0 → 5 就形成完整工程链：
 
