@@ -81,7 +81,13 @@ def main() -> None:
         )
 
     # Step B: send the tool result back to the model for a final answer.
-    second_response = client.completion(messages=messages)
+    # Keep the same tool definition in the request, but explicitly forbid another call
+    # so this teaching step always stops after one tool execution.
+    second_response = client.completion(
+        messages=messages,
+        tools=[TOOL_SCHEMAS[0]],
+        tool_choice="none",
+    )
     second_choice = second_response.choices[0]
 
     print("\n========== SECOND MODEL RESPONSE ==========")
