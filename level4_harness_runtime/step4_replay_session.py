@@ -30,15 +30,23 @@ def main() -> None:
     print("\nmodel/context snapshots:", len(contexts))
     if contexts:
         latest = contexts[-1]["data"]
-        print("\n========== LAST MODEL-VISIBLE SYSTEM CONTEXT ==========")
-        print(latest["system_prompt"])
-        print("\nVisible tool names:")
+        print("\n========== LAST MODEL-VISIBLE MESSAGES ==========")
+        for index, message in enumerate(latest["messages"]):
+            print(f"[{index}] role={message.get('role')}")
+            content = message.get("content")
+            if content:
+                print(str(content)[:1200])
+            if message.get("tool_calls"):
+                print("tool_calls:", message["tool_calls"])
+            print()
+
+        print("Visible tool names:")
         for tool in latest["tools"]:
             print("-", tool["function"]["name"])
 
     print(
-        "\nThis file is useful for debugging because the model-visible context "
-        "and durable conversation/tool events are inspectable after the run."
+        "\nThe snapshot is recorded after agent/pre-step hooks, so it represents "
+        "the actual messages and Tool schemas sent to the model provider."
     )
 
 
