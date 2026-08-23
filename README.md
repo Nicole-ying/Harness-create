@@ -17,9 +17,10 @@ Completed:
 - [`level0_llm/`](./level0_llm/) — one normal LLM request, request/response basics.
 - [`level1_tool_agent/`](./level1_tool_agent/) — ordinary Python tools → Function Calling → first general Agent Loop.
 - [`level2_mcp/`](./level2_mcp/) — MCPServer → MCP Client → stdio transport → runtime tool discovery → LLM Agent through MCP.
+- [`level3_skill_memory_context/`](./level3_skill_memory_context/) — Agent Skill discovery/progressive disclosure → Skill routing → Working/Episodic Memory → explicit Context Builder → full MCP + Skill + Memory integration.
 
 Current lesson:
-- [`level3_skill_memory_context/`](./level3_skill_memory_context/) — Agent Skill discovery/progressive disclosure → Skill routing → Working/Episodic Memory → explicit Context Builder → full MCP + Skill + Memory integration.
+- [`level4_harness_runtime/`](./level4_harness_runtime/) — extract Agent Loop, Session, Tool/Context Registries, lifecycle events and plugin management into a reusable teaching Harness; mount MCP, Skill, Memory and Trace as capabilities instead of hard-coding them into the business loop.
 
 The teaching case is based on reward-function diagnosis from an existing CREATE reinforcement-learning experiment, so every later layer can be added to one continuous real problem instead of unrelated demos.
 
