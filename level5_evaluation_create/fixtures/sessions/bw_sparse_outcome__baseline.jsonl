@@ -1,0 +1,7 @@
+{"seq":1,"type":"turn/start","data":{"user_text":"synthetic sparse case"}}
+{"seq":2,"type":"user/message","data":{"content":"分析 sparse outcome failure"}}
+{"seq":3,"type":"model/context","data":{"messages":[{"role":"user","content":"分析 sparse outcome failure"}],"tools":[{"type":"function","function":{"name":"get_training_feedback"}}]}}
+{"seq":4,"type":"tool/call","data":{"tool_call_id":"c1","name":"get_training_feedback","arguments":{"iteration":2}}}
+{"seq":5,"type":"tool/result","data":{"tool_call_id":"c1","name":"get_training_feedback","content":"success signal 5%; training is unstable"}}
+{"seq":6,"type":"assistant/message","data":{"content":"success signal 5%，说明 outcome signal 较稀疏，但还没有检查 reward components。","finish_reason":"stop","tool_calls":[]}}
+{"seq":7,"type":"turn/end","data":{"status":"completed","answer":"success signal 5%，说明 outcome signal 较稀疏，但还没有检查 reward components。"}}
