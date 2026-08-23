@@ -1,7 +1,7 @@
 """Minimal plugin lifecycle with reversible registrations.
 
 The purpose is educational: the Harness core exposes seams, while plugins add
-capabilities beside it.  Unmounting a plugin reverses the registrations it
+capabilities beside it. Unmounting a plugin reverses the registrations it
 created instead of patching the Agent loop.
 """
 
@@ -70,8 +70,20 @@ class PluginManager:
     async def mount(self, plugin: Plugin) -> None:
         if any(existing.name == plugin.name for existing, _ in self._mounted):
             raise ValueError(f"Plugin already mounted: {plugin.name}")
+
         ctx = PluginContext(**self._shared)
-        await plugin.setup(ctx)
+        try:
+            await plugin.setup(ctx)
+        except Exception:
+            # A half-mounted plugin must not leak tools/context/event handlers.
+            await ctx.dispose()
+            teardown = getattr(plugin, "teardown", None)
+            if teardown is not None:
+                value = teardown()
+                if inspect.isawaitable(value):
+                    await value
+            raise
+
         self._mounted.append((plugin, ctx))
 
     async def close(self) -> None:
