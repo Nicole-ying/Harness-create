@@ -1,0 +1,2 @@
+{"run_id":"teaching-run-001","environment":"BipedalWalker-v3","lineage_index":0,"round":2,"reward_version":"v2","session_path":"fixtures/sessions/bw_proxy_leakage__full.jsonl","selected_skill":"gate-proxy-by-validity","reward_code_validated":true,"provenance":"synthetic teaching record"}
+{"run_id":"teaching-run-002","environment":"BipedalWalker-v3","lineage_index":1,"round":2,"reward_version":"v2","session_path":"fixtures/sessions/bw_sparse_outcome__full.jsonl","selected_skill":"densify-sparse-outcome","reward_code_validated":true,"provenance":"synthetic teaching record"}
