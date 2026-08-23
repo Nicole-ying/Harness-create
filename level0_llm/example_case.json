@@ -1,0 +1,20 @@
+{
+  "task": "BipedalWalker reward diagnosis",
+  "iteration": 1,
+  "mean_eval_reward": -17.27,
+  "mean_episode_length": 375.45,
+  "early_falls": "14/20",
+  "reward_components": {
+    "forward_velocity_reward": {
+      "magnitude_share": 0.972,
+      "active_rate": 0.943
+    },
+    "upright_penalty": {
+      "magnitude_share": 0.028
+    },
+    "vertical_oscillation_penalty": {
+      "active_rate": 0.0
+    }
+  },
+  "note": "A compact teaching case derived from an existing CREATE BipedalWalker experiment. Level 0 reads this file in Python and manually puts the selected information into the prompt. The LLM itself cannot open this file."
+}
