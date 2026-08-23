@@ -103,16 +103,17 @@ turn/start
   user/message
 
   step 1
-    build context
-    record model/context
+    build context + tool schemas
     agent/pre-step
+    record exact model/context snapshot
     LLM request
     agent/post-step
     assistant/message
     tool/call
     tools/pre-execute
-    tool/result
+    execute Tool provider
     tools/post-execute
+    tool/result
 
   step 2
     ...
@@ -152,15 +153,14 @@ Session Log > messages list
 
 ## 7. Model-visible means logged
 
-每一步调用模型前，Harness 记录：
+每一步调用模型前，Harness 会先执行 `agent/pre-step` hooks，然后记录真正要发送的：
 
 ```text
-model/context
-  system_prompt
-  tool schemas
+messages
+tool schemas
 ```
 
-这样运行结束后可以检查模型到底看到了哪些 Skill metadata、Memory context 和 Tools。
+这样即使插件重写了 Context 或 Tools，运行结束后仍可以检查模型实际看到的版本。
 
 这是对 DeepSeek Harness 公开架构中“Model-visible means logged”原则的教学化实现，不代表其内部实现细节完全相同。
 
