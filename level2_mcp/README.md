@@ -6,7 +6,7 @@ Level 1 已经会了：
 LLM -> tool_call -> Python Runtime -> 本地函数 -> tool result -> LLM
 ```
 
-Level 2 只做一个核心升级：**Tool 不再必须写死在 Agent 进程里，而是由独立 MCP Server 标准化暴露，Agent/Host 通过 MCP Client 发现并调用它。**
+Level 2 只增加一个核心能力：**Tool 不再必须写死在 Agent 进程里，而是由独立 MCP Server 标准化暴露，Agent/Host 通过 MCP Client 发现并调用它。**
 
 最终结构：
 
@@ -74,6 +74,7 @@ mcp[cli]>=2.0.0,<3.0.0
 level2_mcp/
 ├── backend.py                  # 普通 Python 数据能力，不知道 MCP 的存在
 ├── mcp_server.py               # 用 @mcp.tool() 把能力暴露为 MCP Tools
+├── smoke_test.py               # 不需要 LLM/API key，先验证 Server + Client
 ├── step1_inprocess_client.py   # 2A：同进程 Client，先学 tools/list + tools/call
 ├── step2_stdio_client.py       # 2B：Server 变成独立子进程，使用 stdio transport
 ├── step3_mcp_agent.py          # 2C：LLM Agent 通过 MCP 调用外部 Tool
@@ -82,6 +83,7 @@ level2_mcp/
 ├── mock_data/
 ├── .env.example
 ├── requirements.txt
+├── WIRE_PROTOCOL.md            # 简化 wire-level tools/list / tools/call
 ├── LEARNING_NOTES.md
 └── INTERVIEW_QUESTIONS.md
 ```
@@ -104,7 +106,21 @@ Windows PowerShell：
 pip install -r requirements.txt
 ```
 
-然后运行：
+先运行一个完全不需要 LLM/API key 的检查：
+
+```bash
+python smoke_test.py
+```
+
+如果看到：
+
+```text
+Level 2 MCP smoke test passed.
+```
+
+说明最基本的 MCP Server、Tool discovery 和 Tool call 已经能工作。
+
+然后：
 
 ```bash
 python step1_inprocess_client.py
@@ -298,6 +314,8 @@ result
 ```
 
 这一步非常推荐，因为它让你直观看到：**MCP Server 可以脱离我们自己的 Agent 独立存在。**
+
+如果你想进一步理解 SDK 替你隐藏的协议消息，再看 `WIRE_PROTOCOL.md`。那里面只画简化后的 `tools/list` 和 `tools/call`，不要求你手写 JSON-RPC。
 
 ---
 
