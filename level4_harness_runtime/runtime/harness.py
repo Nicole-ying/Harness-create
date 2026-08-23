@@ -56,15 +56,6 @@ class AgentHarness:
             system_prompt = await self.context.build(self.session)
             tool_schemas = self.tools.schemas()
 
-            # Record the exact model-visible context snapshot.  The model request
-            # can therefore be inspected/replayed from the session log.
-            self.session.append(
-                "model/context",
-                step=step_index,
-                system_prompt=system_prompt,
-                tools=tool_schemas,
-            )
-
             messages = [
                 {"role": "system", "content": system_prompt},
                 *self.session.derive_messages(),
@@ -75,6 +66,16 @@ class AgentHarness:
                 "tools": tool_schemas,
             }
             await self.events.emit("agent/pre-step", pre_payload)
+
+            # Log the exact post-hook model-visible request.  If a plugin rewrites
+            # messages or tools in agent/pre-step, the snapshot still matches what
+            # is actually sent to the provider.
+            self.session.append(
+                "model/context",
+                step=step_index,
+                messages=pre_payload["messages"],
+                tools=pre_payload["tools"],
+            )
 
             response = await asyncio.to_thread(
                 self.llm.completion,
