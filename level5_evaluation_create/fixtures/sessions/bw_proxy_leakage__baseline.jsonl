@@ -1,0 +1,7 @@
+{"seq":1,"type":"turn/start","data":{"user_text":"synthetic proxy case"}}
+{"seq":2,"type":"user/message","data":{"content":"分析 reward failure"}}
+{"seq":3,"type":"model/context","data":{"messages":[{"role":"user","content":"分析 reward failure"}],"tools":[{"type":"function","function":{"name":"get_training_feedback"}}]}}
+{"seq":4,"type":"tool/call","data":{"tool_call_id":"c1","name":"get_training_feedback","arguments":{"iteration":1}}}
+{"seq":5,"type":"tool/result","data":{"tool_call_id":"c1","name":"get_training_feedback","content":"score low; early falls 14/20"}}
+{"seq":6,"type":"assistant/message","data":{"content":"训练存在较多 early falls 14/20，但当前证据不足以确定 reward 结构问题。","finish_reason":"stop","tool_calls":[]}}
+{"seq":7,"type":"turn/end","data":{"status":"completed","answer":"训练存在较多 early falls 14/20，但当前证据不足以确定 reward 结构问题。"}}
