@@ -1,0 +1,4 @@
+openai>=1.100.0
+python-dotenv>=1.0.1
+PyYAML>=6.0.2
+mcp[cli]>=2.0.0,<3.0.0
