@@ -1,0 +1,8 @@
+{
+  "task": "BipedalWalker reward diagnosis",
+  "iteration": 1,
+  "mean_eval_reward": -17.27,
+  "mean_episode_length": 375.45,
+  "early_falls": "14/20",
+  "note": "Teaching data carried forward from earlier levels; not the full raw CREATE experiment log."
+}
