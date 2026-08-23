@@ -1,0 +1,3 @@
+run_id,environment,lineage_index,round,reward_version,search_fitness,best_so_far_fitness,solved,test_fitness,provenance
+teaching-run-001,BipedalWalker-v3,0,2,v2,320.0,320.0,true,,synthetic teaching record
+teaching-run-002,BipedalWalker-v3,1,2,v2,301.0,301.0,true,,synthetic teaching record
